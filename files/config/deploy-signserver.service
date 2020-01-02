@@ -1,0 +1,18 @@
+[Unit]
+Description=Deploy SignServer DataSources and EAR
+After=wildfly.service
+
+[Service]
+Type=oneshot
+PassEnvironment=SIGNSERVER_MYSQL_USER
+PassEnvironment=SIGNSERVER_MYSQL_PASSWORD
+PassEnvironment=SIGNSERVER_MYSQL_HOST
+PassEnvironment=SIGNSERVER_NODEID
+PassEnvironment=APPSRV_HOME
+ExecStart=/opt/utils/wildfly-ds-config-oneshot.sh
+RemainAfterExit=true
+#ExecStop=/opt/utils/mariadb_teardown.sh
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target
