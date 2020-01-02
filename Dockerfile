@@ -27,13 +27,15 @@ rm -f /lib/systemd/system/anaconda.target.wants/*;
 # Systemd - preparation ends
 
 # Install prerequsites part 1
-RUN yum -y update && yum -y install java-1.8.0-openjdk mysql-connector-java ant maven unzip which && yum clean all -y
+RUN yum -y update && yum -y install java-1.8.0-openjdk mysql-connector-java ant maven unzip which wget && yum clean all -y
 # Install prerequsites part 2
-COPY files/sources /tmp/
+#COPY files/sources /tmp/
 COPY files/utils /opt/utils
 
-RUN unzip /tmp/wildfly-18.0.0.Final.zip -d /opt; \
-	mv /opt/wildfly-18.0.0.Final /opt/wildfly; \
+RUN cd /tmp; \
+	wget https://download.jboss.org/wildfly/18.0.1.Final/wildfly-18.0.1.Final.zip; \
+	unzip /tmp/wildfly-18.0.1.Final.zip -d /opt; \
+	mv /opt/wildfly-18.0.1.Final /opt/wildfly; \
 	groupadd -r wildfly; \
 	useradd -r -g wildfly -d /opt/wildfly -s /sbin/nologin wildfly; \
 	mkdir -p /etc/wildfly; \
@@ -41,6 +43,8 @@ RUN unzip /tmp/wildfly-18.0.0.Final.zip -d /opt; \
 	cp /opt/wildfly/docs/contrib/scripts/systemd/launch.sh /opt/wildfly/bin/; \
 	chmod +x /opt/wildfly/bin/*.sh; \
 	cp /opt/wildfly/docs/contrib/scripts/systemd/wildfly.service /etc/systemd/system/; \
+	cd /tmp; \
+	wget https://sourceforge.net/projects/signserver/files/signserver/5.0/signserver-ce-5.0.0.Final-bin.zip; \ 
 	unzip /tmp/signserver-ce-5.0.0.Final-bin.zip -d /opt; \
 	mv /opt/signserver-ce-5.0.0.Final /opt/signserver
 
@@ -52,7 +56,8 @@ COPY files/config/deploy-signserver.service /etc/systemd/system/
 # Cleanup
 RUN systemctl enable deploy-signserver; \
 	systemctl enable wildfly; \
-	rm -fr /tmp/sources; \
+	rm /tmp/wildfly-18.0.1.Final.zip; \
+	rm /tmp/signserver-ce-5.0.0.Final-bin.zip; \
 	chown -R wildfly:wildfly /opt/signserver; \
 	chown -R wildfly:wildfly /opt/wildfly; \
 	chown -R wildfly:wildfly /etc/wildfly
