@@ -9,6 +9,7 @@ ENV container docker
 # Sign Server and Wildfly environment variables
 ENV APPSRV_HOME=/opt/wildfly
 ENV JAVA_HOME=/etc/alternatives/java_sdk_openjdk
+ENV SIGNSERVER_HOME=/opt/signserver
 ENV SIGNSERVER_NODEID=node1
 ENV SIGNSERVER_MYSQL_USER=signserver
 ENV SIGNSERVER_MYSQL_PASSWORD=signserver
@@ -29,13 +30,12 @@ rm -f /lib/systemd/system/anaconda.target.wants/*;
 # Install prerequsites part 1
 RUN yum -y update && yum -y install java-1.8.0-openjdk mysql-connector-java ant maven unzip which wget && yum clean all -y
 # Install prerequsites part 2
-#COPY files/sources /tmp/
 COPY files/utils /opt/utils
 
 RUN cd /tmp; \
-	wget https://download.jboss.org/wildfly/18.0.1.Final/wildfly-18.0.1.Final.zip; \
-	unzip /tmp/wildfly-18.0.1.Final.zip -d /opt; \
-	mv /opt/wildfly-18.0.1.Final /opt/wildfly; \
+	wget -q https://download.jboss.org/wildfly/14.0.1.Final/wildfly-14.0.1.Final.zip; \
+	unzip /tmp/wildfly-14.0.1.Final.zip -d /opt; \
+	mv /opt/wildfly-14.0.1.Final /opt/wildfly; \
 	groupadd -r wildfly; \
 	useradd -r -g wildfly -d /opt/wildfly -s /sbin/nologin wildfly; \
 	mkdir -p /etc/wildfly; \
@@ -44,9 +44,12 @@ RUN cd /tmp; \
 	chmod +x /opt/wildfly/bin/*.sh; \
 	cp /opt/wildfly/docs/contrib/scripts/systemd/wildfly.service /etc/systemd/system/; \
 	cd /tmp; \
-	wget https://sourceforge.net/projects/signserver/files/signserver/5.0/signserver-ce-5.0.0.Final-bin.zip; \ 
+	wget -q https://sourceforge.net/projects/signserver/files/signserver/5.0/signserver-ce-5.0.0.Final-bin.zip; \ 
 	unzip /tmp/signserver-ce-5.0.0.Final-bin.zip -d /opt; \
-	mv /opt/signserver-ce-5.0.0.Final /opt/signserver
+	mv /opt/signserver-ce-5.0.0.Final /opt/signserver; \
+	mkdir /opt/wildfly/standalone/configuration/keystore; \
+	cp /opt/signserver/res/test/dss10/dss10_demo-tls.jks $APPSRV_HOME/standalone/configuration/keystore/keystore.jks; \
+	cp /opt/signserver/res/test/dss10/dss10_truststore.jks $APPSRV_HOME/standalone/configuration/keystore/truststore.jks
 
 # Copy mysql driver and deploy.properties
 COPY files/config/signserver_deploy.properties /opt/signserver/conf/signserver_deploy.properties
@@ -56,7 +59,7 @@ COPY files/config/deploy-signserver.service /etc/systemd/system/
 # Cleanup
 RUN systemctl enable deploy-signserver; \
 	systemctl enable wildfly; \
-	rm /tmp/wildfly-18.0.1.Final.zip; \
+	rm /tmp/wildfly-14.0.1.Final.zip; \
 	rm /tmp/signserver-ce-5.0.0.Final-bin.zip; \
 	chown -R wildfly:wildfly /opt/signserver; \
 	chown -R wildfly:wildfly /opt/wildfly; \
